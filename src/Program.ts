@@ -1,9 +1,9 @@
 import * as readline from "readline-sync";
-import { SyntaxTree } from "./expression_evaluator/SyntaxTree";
-import { SyntaxNode } from "./expression_evaluator/types";
-import { SyntaxToken } from "./expression_evaluator/SyntaxToken";
+import { SyntaxTree } from "./components/SyntaxTree";
+import { SyntaxNode } from "./components/types";
+import { SyntaxToken } from "./components/SyntaxToken";
 import Bunyan from "bunyan";
-import { Evaluator } from "./expression_evaluator/Evaluator";
+import { Evaluator } from "./components/Evaluator";
 const debug = Bunyan.createLogger({
     name: "Program",
     level: "debug",
