@@ -12,3 +12,6 @@ export class BinaryExpressionSyntax extends SyntaxNode {
         return [this.left, this.operatorToken, this.right];
     }
 }
+
+
+

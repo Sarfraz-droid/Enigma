@@ -1,9 +1,12 @@
 import { BinaryExpressionSyntax } from "./BinaryExpressionSyntax";
+import { ExpressionSyntax } from "./ExpressionSyntax";
 import { Lexer } from "./Lexer";
 import { NumberExpressionSyntax } from "./NumberExpressionSyntax";
 import { ParenthesizedExpressionSyntax } from "./ParenthesizedExpressionSyntax";
+import { SyntaxFacts } from "./SyntaxFacts";
 import { SyntaxToken } from "./SyntaxToken";
 import { SyntaxTree } from "./SyntaxTree";
+import { UnaryExpressionSyntax } from "./UnaryExpressionSyntax";
 import { SyntaxKind, SyntaxNode } from "./types";
 import Bunyan from "bunyan";
 
@@ -59,6 +62,35 @@ export class Parser {
         return current;
     }
 
+    private ParseExpression(parentPrecedence: number = 0): ExpressionSyntax {
+
+        let left: ExpressionSyntax;
+        let unaryOperatorPrecedence = SyntaxFacts.GetUnaryOperatorPrecedence(this.getCurrent().kind);
+
+        if (unaryOperatorPrecedence !== 0 && unaryOperatorPrecedence >= parentPrecedence) {
+            let operatorToken = this.nextToken();
+            let operand = this.ParseExpression(unaryOperatorPrecedence);
+            left = new UnaryExpressionSyntax(operatorToken, operand);
+        } else {
+            left = this.ParsePrimaryExpression();
+        }
+
+        while (true) {
+            let precedence = SyntaxFacts.GetBinaryOperatorPrecedence(this.getCurrent().kind);
+
+            if (precedence === 0 || precedence <= parentPrecedence) {
+                break;
+            }
+
+            let operatorToken = this.nextToken();
+            let right = this.ParseExpression(precedence);
+            left = new BinaryExpressionSyntax(left, operatorToken, right);
+        }
+
+        return left;
+    }
+
+
 
 
     public Parse(): SyntaxTree {
@@ -69,7 +101,7 @@ export class Parser {
         return new SyntaxTree(this.diagnostics, expression, endOfFileToken);
     }
 
-    private ParseExpression(): SyntaxNode {
+    private ParseTerm(): SyntaxNode {
         let left = this.ParseFactor();
 
         while (this.getCurrent().kind == SyntaxKind.Plus) {
@@ -108,7 +140,7 @@ export class Parser {
     public ParsePrimaryExpression(): SyntaxNode {
         if (this.getCurrent().kind === SyntaxKind.OpenParenthesis) {
             let left = this.nextToken();
-            let expression = this.ParseExpression();
+            let expression = this.ParseTerm();
             let right = this.MatchToken(SyntaxKind.CloseParenthesis);
 
             return new ParenthesizedExpressionSyntax(left, expression, right);

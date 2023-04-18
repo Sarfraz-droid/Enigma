@@ -2,6 +2,7 @@ import { BinaryExpressionSyntax } from "./BinaryExpressionSyntax";
 import { ExpressionSyntax } from "./ExpressionSyntax";
 import { NumberExpressionSyntax } from "./NumberExpressionSyntax";
 import { ParenthesizedExpressionSyntax } from "./ParenthesizedExpressionSyntax";
+import { UnaryExpressionSyntax } from "./UnaryExpressionSyntax";
 import { SyntaxKind } from "./types";
 
 export class Evaluator {
@@ -17,6 +18,20 @@ export class Evaluator {
     private EvaluateExpression(root: ExpressionSyntax): number {
         if (root.kind === SyntaxKind.NumberExpression) {
             return Number((root as NumberExpressionSyntax).numberToken.value);
+        }
+
+        if (root.kind === SyntaxKind.UnaryExpression) {
+            let u = root as UnaryExpressionSyntax;
+            let operand = this.EvaluateExpression((root as UnaryExpressionSyntax).operand);
+
+            switch (u.operatorToken.kind) {
+                case SyntaxKind.Plus:
+                    return +operand;
+                case SyntaxKind.Minus:
+                    return -operand;
+            }
+
+            throw new Error(`Unexpected unary operator ${u.operatorToken.kind}`);
         }
 
         if (root.kind === SyntaxKind.BinaryExpression) {

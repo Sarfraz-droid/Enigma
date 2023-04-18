@@ -12,6 +12,7 @@ export enum SyntaxKind {
     NumberExpression = "NumberExpression",
     ParenthesizedExpression = "ParenthesizedExpression",
     BinaryExpression = "BinaryExpression",
+    UnaryExpression = "UnaryExpression"
 }
 
 
