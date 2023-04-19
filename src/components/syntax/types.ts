@@ -9,10 +9,18 @@ export enum SyntaxKind {
     CloseParenthesis = "CloseParenthesis",
     EndOfFileToken = "EndOfFileToken",
     Bad = "Bad",
-    NumberExpression = "NumberExpression",
+    LiteralExpression = "LiteralExpression",
     ParenthesizedExpression = "ParenthesizedExpression",
     BinaryExpression = "BinaryExpression",
-    UnaryExpression = "UnaryExpression"
+    UnaryExpression = "UnaryExpression",
+    TrueKeyword = "TrueKeyword",
+    FalseKeyword = "FalseKeyword",
+    Identifier = "Identifier",
+    Bang = "Bang",
+    Ampersand = "Ampersand",
+    Pipe = "Pipe",
+    EqualsEquals = "EqualsEquals",
+    BangEquals = "BangEquals"
 }
 
 

@@ -1,17 +1,16 @@
 import { BinaryExpressionSyntax } from "./BinaryExpressionSyntax";
 import { ExpressionSyntax } from "./ExpressionSyntax";
 import { Lexer } from "./Lexer";
-import { NumberExpressionSyntax } from "./NumberExpressionSyntax";
+import { LiteralExpressionSyntax } from "./LiteralExpressionSyntax";
 import { ParenthesizedExpressionSyntax } from "./ParenthesizedExpressionSyntax";
 import { SyntaxFacts } from "./SyntaxFacts";
 import { SyntaxToken } from "./SyntaxToken";
 import { SyntaxTree } from "./SyntaxTree";
 import { UnaryExpressionSyntax } from "./UnaryExpressionSyntax";
 import { SyntaxKind, SyntaxNode } from "./types";
-import Bunyan from "bunyan";
+import debug from "debug";
 
-const log = Bunyan.createLogger({ name: "Parser" });
-
+const log = debug("syntax:parser");
 export class Parser {
     private _tokens: SyntaxToken[];
     private _position: number;
@@ -25,8 +24,11 @@ export class Parser {
 
         let token: SyntaxToken;
 
+        log("Constructor", lexer);
+
         do {
             token = lexer.NextToken();
+            log("Constructor", token.kind, token.text, token.value);
 
             if (token.kind !== SyntaxKind.WhiteSpace && token.kind !== SyntaxKind.Bad) {
                 tokens.push(token);
@@ -66,26 +68,38 @@ export class Parser {
 
         let left: ExpressionSyntax;
         let unaryOperatorPrecedence = SyntaxFacts.GetUnaryOperatorPrecedence(this.getCurrent().kind);
-
+        log("Parse Expression ", parentPrecedence);
         if (unaryOperatorPrecedence !== 0 && unaryOperatorPrecedence >= parentPrecedence) {
             let operatorToken = this.nextToken();
             let operand = this.ParseExpression(unaryOperatorPrecedence);
+
             left = new UnaryExpressionSyntax(operatorToken, operand);
         } else {
             left = this.ParsePrimaryExpression();
         }
 
+
         while (true) {
             let precedence = SyntaxFacts.GetBinaryOperatorPrecedence(this.getCurrent().kind);
-
             if (precedence === 0 || precedence <= parentPrecedence) {
                 break;
             }
 
             let operatorToken = this.nextToken();
             let right = this.ParseExpression(precedence);
+
+            log(left.kind, right.kind, operatorToken.kind);
+
+            if (left.kind != right.kind) {
+                this.diagnostics.push(`ERROR: Type mismatch: ${left.kind} ${operatorToken.kind} ${right.kind}`);
+            }
+
+
             left = new BinaryExpressionSyntax(left, operatorToken, right);
         }
+
+        log("left", left);
+
 
         return left;
     }
@@ -94,6 +108,7 @@ export class Parser {
 
 
     public Parse(): SyntaxTree {
+        log("Initializing Parser...")
         let expression = this.ParseExpression();
         // console.log("expression", expression);
         let endOfFileToken = this.MatchToken(SyntaxKind.EndOfFileToken);
@@ -103,6 +118,7 @@ export class Parser {
 
     private ParseTerm(): SyntaxNode {
         let left = this.ParseFactor();
+
 
         while (this.getCurrent().kind == SyntaxKind.Plus) {
             let operatorToken = this.nextToken();
@@ -114,8 +130,9 @@ export class Parser {
         return left;
     }
 
-    public ParseFactor(): SyntaxNode {
+    public ParseFactor(): ExpressionSyntax {
         let left = this.ParsePrimaryExpression();
+
 
         while (this.getCurrent().kind == SyntaxKind.Star || this.getCurrent().kind == SyntaxKind.Slash) {
             let operatorToken = this.nextToken();
@@ -137,16 +154,26 @@ export class Parser {
         return new SyntaxToken(kind, this.getCurrent().position, null, null);
     }
 
-    public ParsePrimaryExpression(): SyntaxNode {
+    public ParsePrimaryExpression(): ExpressionSyntax {
         if (this.getCurrent().kind === SyntaxKind.OpenParenthesis) {
             let left = this.nextToken();
             let expression = this.ParseTerm();
             let right = this.MatchToken(SyntaxKind.CloseParenthesis);
 
+            if (typeof left.value !== typeof right.value) {
+                this.diagnostics.push(`ERROR: Parenthesis mismatch between <${typeof left.value}> && <${typeof right.value}>`);
+            }
+
             return new ParenthesizedExpressionSyntax(left, expression, right);
         }
 
+        else if (this.getCurrent().kind === SyntaxKind.TrueKeyword || this.getCurrent().kind === SyntaxKind.FalseKeyword) {
+            let value = this.getCurrent().kind === SyntaxKind.TrueKeyword;
+            const exp = new LiteralExpressionSyntax(this.nextToken(), value);
+            return exp;
+        }
+
         let numberToken = this.MatchToken(SyntaxKind.Number);
-        return new NumberExpressionSyntax(numberToken);
+        return new LiteralExpressionSyntax(numberToken);
     }
 }

@@ -1,15 +1,12 @@
 import * as readline from "readline-sync";
-import { SyntaxTree } from "./components/SyntaxTree";
-import { SyntaxNode } from "./components/types";
-import { SyntaxToken } from "./components/SyntaxToken";
-import Bunyan from "bunyan";
+import { SyntaxTree } from "./components/syntax/SyntaxTree";
+import { SyntaxNode } from "./components/syntax/types";
+import { SyntaxToken } from "./components/syntax/SyntaxToken";
 import { Evaluator } from "./components/Evaluator";
-const debug = Bunyan.createLogger({
-    name: "Program",
-    level: "debug",
-    serializers: Bunyan.stdSerializers,
+import { Binder } from "./components/Binding/Binder";
+import debug from "debug";
 
-});
+const log = debug("program");
 
 export class Executor {
     public Main() {
@@ -39,19 +36,28 @@ export class Executor {
             }
 
             const syntaxTree = SyntaxTree.Parse(input);
+            let binder = new Binder()
+            let boundExpression = binder.BindExpression(syntaxTree.root);
+
+            log("boundExpression", boundExpression);
+
+            let diagnostics = syntaxTree.diagnostics.concat(binder.diagnostics);
+
+
+
             if (showTree)
                 this.PrettyPrint(syntaxTree.root, "");
 
-            if (syntaxTree.diagnostics.length > 0) {
+            if (diagnostics.length > 0) {
                 console.log("There were errors in the input.");
-                for (const diagnostic of syntaxTree.diagnostics) {
+                for (const diagnostic of diagnostics) {
                     console.log(diagnostic);
                 }
             } else {
                 console.log("\n-------------------\n");
                 console.log("No errors in the input.");
 
-                const evaluator = new Evaluator(syntaxTree.root);
+                const evaluator = new Evaluator(boundExpression);
                 const result = evaluator.Evaluate();
 
                 console.log("Result: ", result);

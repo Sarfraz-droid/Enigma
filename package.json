@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev" : "ts-node ./src/main.ts"
+    "dev": "ts-node ./src/main.ts"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +20,7 @@
     "@types/node": "^18.15.11",
     "@types/readline-sync": "^1.4.4",
     "bunyan": "^1.8.15",
+    "chalk": "^5.2.0",
     "debug": "^4.3.4",
     "log": "^6.3.1",
     "readline-sync": "^1.4.10"

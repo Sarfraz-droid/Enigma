@@ -1,3 +1,5 @@
+import { Char } from "../../utils/isLetter";
+import { SyntaxFacts } from "./SyntaxFacts";
 import { SyntaxToken } from "./SyntaxToken"
 import { SyntaxKind } from "./types";
 
@@ -24,12 +26,22 @@ export class Lexer {
 
     private getCurrent(): string {
 
-        if (this._position >= this._text.length) {
+        return this.Peek(0);
+    }
+
+    private lookAhead(): string {
+        return this.Peek(1);
+    }
+
+    private Peek(offset: number) {
+        let index = this._position + offset;
+        if (index >= this._text.length) {
             return '\0';
         }
 
-        return this._text[this._position];
+        return this._text[index];
     }
+
 
     private Next() {
         this._position++;
@@ -74,11 +86,44 @@ export class Lexer {
             let value = Number(text);
 
             return new SyntaxToken(SyntaxKind.Number, start, text, value);
+        } else if (Char.isLetter(current)) {
+            let start = this._position;
+
+
+            while (Char.isLetter(this.getCurrent())) {
+                this.Next();
+            }
+
+            let text = this._text.substring(start, this._position);
+            let kind = SyntaxFacts.GetKeywordKind(text);
+            return new SyntaxToken(kind, start, text, null);
         }
 
 
         if (mp[current] !== undefined) {
             return new SyntaxToken(mp[current], this._position, this._text[this._position++], null);
+        }
+
+        switch (current) {
+            case '&':
+                if (this.lookAhead() === "&") {
+                    return new SyntaxToken(SyntaxKind.Ampersand, this._position += 2, "&&", null);
+                }
+                break;
+            case '|':
+                if (this.lookAhead() === "|") {
+                    return new SyntaxToken(SyntaxKind.Pipe, this._position += 2, "||", null);
+                }
+                break;
+            case '=':
+                if (this.lookAhead() === "=") {
+                    return new SyntaxToken(SyntaxKind.EqualsEquals, this._position += 2, "==", null);
+                }
+            case "!":
+                if (this.lookAhead() === "=") {
+                    return new SyntaxToken(SyntaxKind.BangEquals, this._position += 2, "!=", null);
+                }
+                return new SyntaxToken(SyntaxKind.Bang, this._position++, "!", null);
         }
 
         this.diagnostics.push(`ERROR: Bad character input: '${current}'`);
